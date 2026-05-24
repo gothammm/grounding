@@ -39,9 +39,24 @@ install_binary() {
 
   if [[ -z "${version:-}" ]]; then
     echo "  Fetching latest version..."
-    version=$(curl -sSfL "https://api.github.com/repos/${REPO}/releases/latest" \
+    version=$(curl -sL "https://api.github.com/repos/${REPO}/releases/latest" \
       | grep '"tag_name":' \
-      | sed -E 's/.*"([^"]+)".*/\1/')
+      | sed -E 's/.*"([^"]+)".*/\1/' || true)
+
+    if [[ -z "${version:-}" ]]; then
+      echo "  Could not fetch latest release, trying tags..."
+      version=$(curl -sL "https://api.github.com/repos/${REPO}/tags" \
+        | grep '"name":' \
+        | head -1 \
+        | sed -E 's/.*"([^"]+)".*/\1/' || true)
+    fi
+
+    if [[ -z "${version:-}" ]]; then
+      echo "  Could not determine latest version."
+      echo "  Use --version VERSION to specify one manually."
+      exit 1
+    fi
+
     echo "  Latest: ${version}"
   fi
 
@@ -50,7 +65,7 @@ install_binary() {
 
   echo "  Downloading ${version} for ${platform}..."
   curl -fL --progress-bar "${tarball_url}" -o "${tmpdir}/grounding.tar.gz"
-  curl -sSfL "${checksum_url}" -o "${tmpdir}/grounding.tar.gz.sha256"
+  curl -sL "${checksum_url}" -o "${tmpdir}/grounding.tar.gz.sha256"
 
   echo "  Verifying checksum..."
   if command -v sha256sum &>/dev/null; then
