@@ -60,37 +60,37 @@ MCP tools: `search_docs`, `index_document`, `get_document`, `batch_index`. Full 
 
 ## Installation
 
-Pre-built binaries for **Linux** (x86_64) and **macOS** (Intel & Apple Silicon) are available on the [Releases page](https://github.com/grounding/grounding/releases).
+Pre-built binaries for **Linux** (x86_64) and **macOS** (Intel & Apple Silicon) are available on the [Releases page](https://github.com/gothammm/grounding/releases).
 
 ### Shell Install Script (Quick)
 ```bash
-curl -sSfL https://github.com/grounding/grounding/releases/latest/install.sh | sh
+curl -sSfL https://github.com/gothammm/grounding/releases/latest/install.sh | sh
 ```
 
 Install a specific version:
 ```bash
-curl -sSfL https://github.com/grounding/grounding/releases/latest/install.sh | sh -s -- --version v0.1.0
+curl -sSfL https://github.com/gothammm/grounding/releases/latest/install.sh | sh -s -- --version v0.1.0
 ```
 
 Install to a custom directory:
 ```bash
-curl -sSfL https://github.com/grounding/grounding/releases/latest/install.sh | sh -s -- --dir /usr/local/bin
+curl -sSfL https://github.com/gothammm/grounding/releases/latest/install.sh | sh -s -- --dir /usr/local/bin
 ```
 
 ### Manual Download
-Download and extract the tarball for your platform from the [Releases page](https://github.com/grounding/grounding/releases), then place the binary in your PATH:
+Download and extract the tarball for your platform from the [Releases page](https://github.com/gothammm/grounding/releases), then place the binary in your PATH:
 
 ```bash
 # Linux
-curl -L https://github.com/grounding/grounding/releases/download/v0.1.0/grounding-x86_64-unknown-linux-gnu.tar.gz | tar xz
+curl -L https://github.com/gothammm/grounding/releases/download/v0.1.0/grounding-x86_64-unknown-linux-gnu.tar.gz | tar xz
 sudo mv grounding /usr/local/bin/
 
 # macOS (Intel)
-curl -L https://github.com/grounding/grounding/releases/download/v0.1.0/grounding-x86_64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/gothammm/grounding/releases/download/v0.1.0/grounding-x86_64-apple-darwin.tar.gz | tar xz
 sudo mv grounding /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -L https://github.com/grounding/grounding/releases/download/v0.1.0/grounding-aarch64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/gothammm/grounding/releases/download/v0.1.0/grounding-aarch64-apple-darwin.tar.gz | tar xz
 sudo mv grounding /usr/local/bin/
 ```
 
