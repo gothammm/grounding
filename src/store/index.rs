@@ -39,8 +39,12 @@ impl Store {
         std::fs::create_dir_all(&config.index_dir)?;
 
         let index = match Index::open_in_dir(&config.index_dir) {
-            Ok(index) => index,
+            Ok(index) => {
+                tracing::debug!("opened existing index at {:?}", config.index_dir);
+                index
+            }
             Err(_) => {
+                tracing::info!("creating new index at {:?}", config.index_dir);
                 let schema = build_schema();
                 Index::create_in_dir(&config.index_dir, schema)?
             }
@@ -74,7 +78,9 @@ impl Store {
             ))?;
         }
         writer.commit()?;
-        self.metrics.documents_indexed.fetch_add(docs.len() as u64, std::sync::atomic::Ordering::Relaxed);
+        let count = docs.len() as u64;
+        self.metrics.documents_indexed.fetch_add(count, std::sync::atomic::Ordering::Relaxed);
+        tracing::info!("indexed {} documents", count);
         Ok(())
     }
 
@@ -94,6 +100,7 @@ impl Store {
         ))?;
         writer.commit()?;
         self.metrics.documents_indexed.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        tracing::info!("indexed document doc_id={}", doc_id);
         Ok(())
     }
 
@@ -135,6 +142,12 @@ impl Store {
             Some(self.doc_to_result(doc_ref, 0.0))
         });
 
+        if result.is_some() {
+            tracing::info!("found document doc_id={}", doc_id);
+        } else {
+            tracing::warn!("document not found doc_id={}", doc_id);
+        }
+
         Ok(result)
     }
 
@@ -154,6 +167,7 @@ impl Store {
             let doc_ref = searcher.doc::<TantivyDocument>(doc_addr)?;
             results.push(self.doc_to_result(doc_ref, score));
         }
+        tracing::info!("search query=\"{}\" returned {} results", query_str, results.len());
         Ok(results)
     }
 }

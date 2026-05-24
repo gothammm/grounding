@@ -114,9 +114,16 @@ Related tools:
         &self,
         Parameters(req): Parameters<QueryRequest>,
     ) -> Result<String, String> {
+        tracing::info!("search_docs query=\"{}\" top_k={}", req.query, req.top_k);
         match self.store.search(&req.query, req.top_k) {
-            Ok(results) => serde_json::to_string(&results).map_err(|e| e.to_string()),
-            Err(e) => Err(e.to_string()),
+            Ok(results) => {
+                tracing::info!("search_docs query=\"{}\" returned {} results", req.query, results.len());
+                serde_json::to_string(&results).map_err(|e| e.to_string())
+            }
+            Err(e) => {
+                tracing::error!("search_docs query=\"{}\" failed: {}", req.query, e);
+                Err(e.to_string())
+            }
         }
     }
 
@@ -148,12 +155,19 @@ Related tools:
         &self,
         Parameters(req): Parameters<IndexRequest>,
     ) -> Result<String, String> {
+        tracing::info!("index_document doc_id={}", req.doc_id);
         match self
             .store
             .index_document(&req.doc_id, &req.title, &req.body, req.source_url.as_deref())
         {
-            Ok(()) => Ok("ok".to_string()),
-            Err(e) => Err(e.to_string()),
+            Ok(()) => {
+                tracing::info!("index_document doc_id={} succeeded", req.doc_id);
+                Ok("ok".to_string())
+            }
+            Err(e) => {
+                tracing::error!("index_document doc_id={} failed: {}", req.doc_id, e);
+                Err(e.to_string())
+            }
         }
     }
 
@@ -190,10 +204,20 @@ Related tools:
         &self,
         Parameters(req): Parameters<GetDocumentRequest>,
     ) -> Result<String, String> {
+        tracing::info!("get_document doc_id={}", req.doc_id);
         match self.store.get_document(&req.doc_id) {
-            Ok(Some(doc)) => serde_json::to_string(&doc).map_err(|e| e.to_string()),
-            Ok(None) => Err("document not found".to_string()),
-            Err(e) => Err(e.to_string()),
+            Ok(Some(doc)) => {
+                tracing::info!("get_document doc_id={} found", req.doc_id);
+                serde_json::to_string(&doc).map_err(|e| e.to_string())
+            }
+            Ok(None) => {
+                tracing::warn!("get_document doc_id={} not found", req.doc_id);
+                Err("document not found".to_string())
+            }
+            Err(e) => {
+                tracing::error!("get_document doc_id={} failed: {}", req.doc_id, e);
+                Err(e.to_string())
+            }
         }
     }
 
@@ -245,9 +269,16 @@ Related tools:
             })
             .collect();
 
+        tracing::info!("batch_index {} documents", docs.len());
         match self.store.index_documents(&docs) {
-            Ok(()) => Ok(format!("{{\"count\":{}}}", docs.len())),
-            Err(e) => Err(e.to_string()),
+            Ok(()) => {
+                tracing::info!("batch_index {} documents succeeded", docs.len());
+                Ok(format!("{{\"count\":{}}}", docs.len()))
+            }
+            Err(e) => {
+                tracing::error!("batch_index failed: {}", e);
+                Err(e.to_string())
+            }
         }
     }
 }

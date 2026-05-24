@@ -16,9 +16,13 @@ pub async fn query_handler(
     State(state): State<AppState>,
     body: String,
 ) -> impl IntoResponse {
-    let req: QueryRequest = match serde_json::from_str(&body) {
-        Ok(r) => r,
+    let req: QueryRequest = match serde_json::from_str::<QueryRequest>(&body) {
+        Ok(r) => {
+            tracing::debug!("query request: query=\"{}\", top_k={}", r.query, r.top_k);
+            r
+        }
         Err(e) => {
+            tracing::warn!("query parse error: {}", e);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
                 Json(json!({ "status": "error", "message": format!("Invalid JSON: {}", e) })),
@@ -27,11 +31,17 @@ pub async fn query_handler(
     };
 
     match state.store.search(&req.query, req.top_k) {
-        Ok(results) => Json(json!({ "results": results })).into_response(),
-        Err(e) => (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "status": "error", "message": e.to_string() })),
-        ).into_response(),
+        Ok(results) => {
+            tracing::info!("query \"{}\" returned {} results", req.query, results.len());
+            Json(json!({ "results": results })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("query \"{}\" failed: {}", req.query, e);
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "status": "error", "message": e.to_string() })),
+            ).into_response()
+        }
     }
 }
 
@@ -39,9 +49,13 @@ pub async fn index_handler(
     State(state): State<AppState>,
     body: String,
 ) -> impl IntoResponse {
-    let req: IndexRequest = match serde_json::from_str(&body) {
-        Ok(r) => r,
+    let req = match serde_json::from_str::<IndexRequest>(&body) {
+        Ok(r) => {
+            tracing::debug!("index request: doc_id={}", r.doc_id);
+            r
+        }
         Err(e) => {
+            tracing::warn!("index parse error: {}", e);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
                 Json(json!({ "status": "error", "message": format!("Invalid JSON: {}", e) })),
@@ -50,11 +64,17 @@ pub async fn index_handler(
     };
 
     match state.store.index_document(&req.doc_id, &req.title, &req.body, req.source_url.as_deref()) {
-        Ok(()) => Json(json!({ "status": "ok" })).into_response(),
-        Err(e) => (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "status": "error", "message": e.to_string() })),
-        ).into_response(),
+        Ok(()) => {
+            tracing::info!("indexed document doc_id={}", req.doc_id);
+            Json(json!({ "status": "ok" })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("index document doc_id={} failed: {}", req.doc_id, e);
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "status": "error", "message": e.to_string() })),
+            ).into_response()
+        }
     }
 }
 
@@ -62,9 +82,13 @@ pub async fn batch_index_handler(
     State(state): State<AppState>,
     body: String,
 ) -> impl IntoResponse {
-    let req: BatchIndexRequest = match serde_json::from_str(&body) {
-        Ok(r) => r,
+    let req = match serde_json::from_str::<BatchIndexRequest>(&body) {
+        Ok(r) => {
+            tracing::debug!("batch index request: {} documents", r.documents.len());
+            r
+        }
         Err(e) => {
+            tracing::warn!("batch index parse error: {}", e);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
                 Json(json!({ "status": "error", "message": format!("Invalid JSON: {}", e) })),
@@ -82,11 +106,17 @@ pub async fn batch_index_handler(
     }).collect();
 
     match state.store.index_documents(&docs) {
-        Ok(()) => Json(json!({ "status": "ok", "count": docs.len() })).into_response(),
-        Err(e) => (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "status": "error", "message": e.to_string() })),
-        ).into_response(),
+        Ok(()) => {
+            tracing::info!("batch indexed {} documents", docs.len());
+            Json(json!({ "status": "ok", "count": docs.len() })).into_response()
+        }
+        Err(e) => {
+            tracing::error!("batch index failed: {}", e);
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "status": "error", "message": e.to_string() })),
+            ).into_response()
+        }
     }
 }
 
@@ -94,9 +124,13 @@ pub async fn get_document_handler(
     State(state): State<AppState>,
     body: String,
 ) -> impl IntoResponse {
-    let req: GetDocumentRequest = match serde_json::from_str(&body) {
-        Ok(r) => r,
+    let req = match serde_json::from_str::<GetDocumentRequest>(&body) {
+        Ok(r) => {
+            tracing::debug!("get document request: doc_id={}", r.doc_id);
+            r
+        }
         Err(e) => {
+            tracing::warn!("get document parse error: {}", e);
             return (
                 axum::http::StatusCode::BAD_REQUEST,
                 Json(json!({ "status": "error", "message": format!("Invalid JSON: {}", e) })),
@@ -105,22 +139,33 @@ pub async fn get_document_handler(
     };
 
     match state.store.get_document(&req.doc_id) {
-        Ok(Some(doc)) => Json(json!(doc)).into_response(),
-        Ok(None) => (
-            axum::http::StatusCode::NOT_FOUND,
-            Json(json!({ "status": "error", "message": "document not found" })),
-        ).into_response(),
-        Err(e) => (
-            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({ "status": "error", "message": e.to_string() })),
-        ).into_response(),
+        Ok(Some(doc)) => {
+            tracing::info!("found document doc_id={}", req.doc_id);
+            Json(json!(doc)).into_response()
+        }
+        Ok(None) => {
+            tracing::warn!("document not found doc_id={}", req.doc_id);
+            (
+                axum::http::StatusCode::NOT_FOUND,
+                Json(json!({ "status": "error", "message": "document not found" })),
+            ).into_response()
+        }
+        Err(e) => {
+            tracing::error!("get document doc_id={} failed: {}", req.doc_id, e);
+            (
+                axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+                Json(json!({ "status": "error", "message": e.to_string() })),
+            ).into_response()
+        }
     }
 }
 
 pub async fn health(State(state): State<AppState>) -> Json<serde_json::Value> {
     let store_ok = state.store.search("", 1).is_ok();
+    let status = if store_ok { "ok" } else { "degraded" };
+    tracing::debug!("health check: {}", status);
     Json(json!({
-        "status": if store_ok { "ok" } else { "degraded" },
+        "status": status,
         "store": if store_ok { "healthy" } else { "unhealthy" },
     }))
 }
@@ -128,5 +173,7 @@ pub async fn health(State(state): State<AppState>) -> Json<serde_json::Value> {
 pub async fn metrics_handler(
     State(state): State<AppState>,
 ) -> Json<MetricsSnapshot> {
-    Json(state.store.metrics().snapshot())
+    let snap = state.store.metrics().snapshot();
+    tracing::debug!("metrics: {} indexed, {} searches", snap.documents_indexed, snap.searches_performed);
+    Json(snap)
 }
