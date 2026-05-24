@@ -70,7 +70,7 @@ impl Store {
                 self.schema.doc_id => doc.doc_id.as_str(),
                 self.schema.title => doc.title.as_str(),
                 self.schema.body => doc.body.as_str(),
-                self.schema.source_url => doc.source_url.as_str(),
+                self.schema.source_url => doc.source_url.as_deref().unwrap_or(""),
             ))?;
         }
         writer.commit()?;
@@ -83,14 +83,14 @@ impl Store {
         doc_id: &str,
         title: &str,
         body: &str,
-        source_url: &str,
+        source_url: Option<&str>,
     ) -> anyhow::Result<()> {
         let mut writer: IndexWriter<TantivyDocument> = self.index.writer(50_000_000)?;
         writer.add_document(doc!(
             self.schema.doc_id => doc_id,
             self.schema.title => title,
             self.schema.body => body,
-            self.schema.source_url => source_url,
+            self.schema.source_url => source_url.unwrap_or(""),
         ))?;
         writer.commit()?;
         self.metrics.documents_indexed.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -98,6 +98,9 @@ impl Store {
     }
 
     fn doc_to_result(&self, doc_ref: TantivyDocument, score: f32) -> SearchResult {
+        fn empty_to_none(s: &str) -> Option<String> {
+            if s.is_empty() { None } else { Some(s.to_string()) }
+        }
         SearchResult {
             score,
             doc_id: doc_ref.get_first(self.schema.doc_id)
@@ -116,8 +119,7 @@ impl Store {
                 .collect(),
             source_url: doc_ref.get_first(self.schema.source_url)
                 .and_then(|v| v.as_str())
-                .unwrap_or("")
-                .to_string(),
+                .and_then(empty_to_none),
         }
     }
 

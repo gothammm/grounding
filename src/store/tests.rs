@@ -18,7 +18,7 @@ fn test_index_and_search_document() {
         "doc1",
         "Test Document",
         "This is a test document about searching and indexing",
-        "https://example.com/doc1",
+        Some("https://example.com/doc1"),
     ).unwrap();
 
     let results = store.search("searching", 5).unwrap();
@@ -30,8 +30,8 @@ fn test_index_and_search_document() {
 fn test_search_returns_score_ordered() {
     let (store, _tmp) = setup_store();
 
-    store.index_document("doc1", "Rust", "Rust is a systems programming language", "https://example.com/rust").unwrap();
-    store.index_document("doc2", "Python", "Python is a scripting language", "https://example.com/python").unwrap();
+    store.index_document("doc1", "Rust", "Rust is a systems programming language", Some("https://example.com/rust")).unwrap();
+    store.index_document("doc2", "Python", "Python is a scripting language", Some("https://example.com/python")).unwrap();
 
     let results = store.search("language", 5).unwrap();
     assert!(results.len() >= 2);
@@ -45,7 +45,7 @@ fn test_snippet_truncation() {
     let (store, _tmp) = setup_store();
 
     let long_body = "word ".repeat(200);
-    store.index_document("doc1", "Test", &long_body, "https://example.com").unwrap();
+    store.index_document("doc1", "Test", &long_body, Some("https://example.com")).unwrap();
 
     let results = store.search("word", 5).unwrap();
     assert!(!results.is_empty());
@@ -61,13 +61,13 @@ fn test_batch_indexing() {
             doc_id: "a".into(),
             title: "Alpha".into(),
             body: "First letter of the Greek alphabet".into(),
-            source_url: "https://example.com/alpha".into(),
+            source_url: Some("https://example.com/alpha".into()),
         },
         IndexDocument {
             doc_id: "b".into(),
             title: "Beta".into(),
             body: "Second letter of the Greek alphabet".into(),
-            source_url: "https://example.com/beta".into(),
+            source_url: Some("https://example.com/beta".into()),
         },
     ]).unwrap();
 
@@ -89,7 +89,7 @@ fn test_get_document_not_found() {
 fn test_metrics_tracking() {
     let (store, _tmp) = setup_store();
 
-    store.index_document("m1", "X", "some content", "https://x.com").unwrap();
+    store.index_document("m1", "X", "some content", Some("https://x.com")).unwrap();
     store.search("content", 5).unwrap();
 
     let snap = store.metrics().snapshot();

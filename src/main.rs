@@ -15,6 +15,10 @@ enum Commands {
         #[arg(long, default_value_t = 8080)]
         port: u16,
     },
+    Mcp {
+        #[arg(long, default_value = "./data")]
+        data_dir: String,
+    },
 }
 
 #[tokio::main]
@@ -35,6 +39,10 @@ async fn main() -> anyhow::Result<()> {
                 .and_then(|v| v.parse::<u16>().ok())
                 .unwrap_or(port);
             grounding::serve(&data_dir, port).await?;
+        }
+        Commands::Mcp { data_dir } => {
+            let data_dir = std::env::var("GROUNDING_DATA_DIR").unwrap_or(data_dir);
+            grounding::serve_mcp_stdio(&data_dir).await?;
         }
     }
     Ok(())

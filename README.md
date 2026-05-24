@@ -36,16 +36,79 @@ flowchart LR
 | `/index/batch` | POST | Index multiple documents |
 | `/documents` | POST | Retrieve by doc_id |
 | `/query` | POST | BM25 search |
+| `/mcp` | GET/POST | MCP Streamable HTTP endpoint |
 
 Request/response bodies use `Content-Type: application/json`. Full reference at [API.md](./docs/API.md).
+
+## MCP
+
+Grounding exposes a **Model Context Protocol** interface for LLM agents. Two transports:
+
+```bash
+# Stdio (for local agents like Claude Code)
+grounding mcp --data-dir ./data
+
+# Streamable HTTP at /mcp (for remote agents)
+grounding serve --data-dir ./data --port 8080
+```
+
+MCP tools: `search_docs`, `index_document`, `get_document`, `batch_index`. Full reference at [MCP.md](./docs/MCP.md).
 
 ## Performance
 
 100,000 documents (286 MB text) indexed in ~51 seconds. Queries return in ~7ms. Index uses ~300 MB on disk.
 
+## Installation
+
+Pre-built binaries for **Linux** (x86_64) and **macOS** (Intel & Apple Silicon) are available on the [Releases page](https://github.com/grounding/grounding/releases).
+
+### Shell Install Script (Quick)
+```bash
+curl -sSfL https://github.com/grounding/grounding/releases/latest/install.sh | sh
+```
+
+Install a specific version:
+```bash
+curl -sSfL https://github.com/grounding/grounding/releases/latest/install.sh | sh -s -- --version v0.1.0
+```
+
+Install to a custom directory:
+```bash
+curl -sSfL https://github.com/grounding/grounding/releases/latest/install.sh | sh -s -- --dir /usr/local/bin
+```
+
+### Manual Download
+Download and extract the tarball for your platform from the [Releases page](https://github.com/grounding/grounding/releases), then place the binary in your PATH:
+
+```bash
+# Linux
+curl -L https://github.com/grounding/grounding/releases/download/v0.1.0/grounding-x86_64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv grounding /usr/local/bin/
+
+# macOS (Intel)
+curl -L https://github.com/grounding/grounding/releases/download/v0.1.0/grounding-x86_64-apple-darwin.tar.gz | tar xz
+sudo mv grounding /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -L https://github.com/grounding/grounding/releases/download/v0.1.0/grounding-aarch64-apple-darwin.tar.gz | tar xz
+sudo mv grounding /usr/local/bin/
+```
+
+### Cargo Install (Development)
+```bash
+cargo install grounding
+```
+
+## Build from Source
+
+```bash
+cargo build --release
+./target/release/grounding serve --data-dir ./data
+```
+
 ## Design
 
-- **Single binary** — Tantivy is embedded. No separate server process. `FROM scratch` Docker ~10 MB.
+- **Single binary** — Tantivy is embedded. No separate server process. No external database required.
 - **BM25 today, vectors in V2** — Field boosting is sufficient for code/docs. Vectors add without API breakage.
 - **Distribution path** — Embedded index → add vectors → swap to Quickwit for clustered scale.
 

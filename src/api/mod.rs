@@ -5,11 +5,14 @@ use std::sync::Arc;
 
 use axum::{routing::{get, post}, Router};
 
+use crate::mcp::McpHandler;
 use crate::store::Store;
 
 pub use handlers::AppState;
 
 pub async fn serve(store: Store, port: u16) -> anyhow::Result<()> {
+    let mcp_handler = McpHandler::new(store.clone());
+
     let state = AppState { store: Arc::new(store) };
 
     let app = Router::new()
@@ -20,6 +23,8 @@ pub async fn serve(store: Store, port: u16) -> anyhow::Result<()> {
         .route("/documents", post(handlers::get_document_handler))
         .route("/metrics", get(handlers::metrics_handler))
         .with_state(state);
+
+    let app = app.nest_service("/mcp", mcp_handler.http_service());
 
     let addr = format!("0.0.0.0:{port}");
     tracing::info!("listening on {}", addr);

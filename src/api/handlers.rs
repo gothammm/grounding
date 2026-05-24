@@ -49,7 +49,7 @@ pub async fn index_handler(
         }
     };
 
-    match state.store.index_document(&req.doc_id, &req.title, &req.body, &req.source_url) {
+    match state.store.index_document(&req.doc_id, &req.title, &req.body, req.source_url.as_deref()) {
         Ok(()) => Json(json!({ "status": "ok" })).into_response(),
         Err(e) => (
             axum::http::StatusCode::INTERNAL_SERVER_ERROR,

@@ -46,6 +46,8 @@ Request body:
 }
 ```
 
+`source_url` is optional. Omit or set to `null` when there is no meaningful source URL.
+
 Response (success):
 ```json
 { "status": "ok" }
@@ -75,8 +77,7 @@ Request body:
     {
       "doc_id": "doc-2",
       "title": "Second Title",
-      "body": "Second body content...",
-      "source_url": "https://example.com/2"
+      "body": "Second body content..."
     }
   ]
 }
@@ -100,7 +101,7 @@ Request body:
 }
 ```
 
-Response (found):
+Response (found with source_url):
 ```json
 {
   "score": 0.0,
@@ -108,6 +109,17 @@ Response (found):
   "title": "Document Title",
   "snippet": "First 500 characters of the body...",
   "source_url": "https://example.com/doc"
+}
+```
+
+Response (found without source_url):
+```json
+{
+  "score": 0.0,
+  "doc_id": "unique-string-456",
+  "title": "Another Document",
+  "snippet": "First 500 characters...",
+  "source_url": null
 }
 ```
 
@@ -142,9 +154,16 @@ Response:
       "title": "Document Title",
       "snippet": "First 500 characters of the body...",
       "source_url": "https://example.com/doc"
+    },
+    {
+      "score": 1.234,
+      "doc_id": "unique-string-456",
+      "title": "Another Document",
+      "snippet": "First 500 characters...",
+      "source_url": null
     }
   ]
 }
 ```
 
-Results are ordered by BM25 score descending.
+Results are ordered by BM25 score descending. `source_url` is `null` when no source URL was provided during indexing.

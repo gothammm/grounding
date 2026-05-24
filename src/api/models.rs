@@ -16,7 +16,8 @@ pub struct IndexRequest {
     pub doc_id: String,
     pub title: String,
     pub body: String,
-    pub source_url: String,
+    #[serde(default)]
+    pub source_url: Option<String>,
 }
 
 #[derive(Deserialize)]

@@ -31,21 +31,6 @@ Example:
 GROUNDING_DATA_DIR=/var/lib/grounding GROUNDING_PORT=3000 ./target/release/grounding serve
 ```
 
-## Docker
-
-```dockerfile
-FROM scratch
-COPY grounding /
-VOLUME /data
-EXPOSE 8080
-ENTRYPOINT ["/grounding", "serve", "--data-dir", "/data"]
-```
-
-Build:
-```bash
-cargo build --release --target x86_64-unknown-linux-musl
-```
-
 ## Test with curl
 
 ### Index a document

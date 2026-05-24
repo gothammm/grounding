@@ -25,7 +25,7 @@ pub struct IndexDocument {
     pub doc_id: String,
     pub title: String,
     pub body: String,
-    pub source_url: String,
+    pub source_url: Option<String>,
 }
 
 #[derive(Debug, serde::Serialize)]
@@ -34,5 +34,5 @@ pub struct SearchResult {
     pub doc_id: String,
     pub title: String,
     pub snippet: String,
-    pub source_url: String,
+    pub source_url: Option<String>,
 }
