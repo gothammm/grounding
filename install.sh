@@ -6,13 +6,9 @@ INSTALL_DIR="${INSTALL_DIR:-${HOME}/.local/bin}"
 BINARY_NAME="grounding"
 
 RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
 NC='\033[0m'
 
-log_info() { echo -e "${GREEN}[INFO]${NC} $*"; }
-log_warn() { echo -e "${YELLOW}[WARN]${NC} $*"; }
-log_error() { echo -e "${RED}[ERROR]${NC} $*" >&2; }
+log_error() { echo -e "${RED}error${NC} $*" >&2; }
 
 detect_platform() {
   local os arch
@@ -42,21 +38,21 @@ install_binary() {
   trap 'rm -rf "${tmpdir}"' EXIT
 
   if [[ -z "${version:-}" ]]; then
-    log_info "Fetching latest version..."
+    echo "  Fetching latest version..."
     version=$(curl -sSfL "https://api.github.com/repos/${REPO}/releases/latest" \
       | grep '"tag_name":' \
       | sed -E 's/.*"([^"]+)".*/\1/')
-    log_info "Latest version: ${version}"
+    echo "  Latest: ${version}"
   fi
 
   tarball_url="https://github.com/${REPO}/releases/download/${version}/grounding-${platform}.tar.gz"
   checksum_url="https://github.com/${REPO}/releases/download/${version}/grounding-${platform}.tar.gz.sha256"
 
-  log_info "Downloading ${version} for ${platform}..."
-  curl -sSfL "${tarball_url}" -o "${tmpdir}/grounding.tar.gz"
+  echo "  Downloading ${version} for ${platform}..."
+  curl -fL --progress-bar "${tarball_url}" -o "${tmpdir}/grounding.tar.gz"
   curl -sSfL "${checksum_url}" -o "${tmpdir}/grounding.tar.gz.sha256"
 
-  log_info "Verifying checksum..."
+  echo "  Verifying checksum..."
   if command -v sha256sum &>/dev/null; then
     (cd "${tmpdir}" && sha256sum -c grounding.tar.gz.sha256)
   elif command -v shasum &>/dev/null; then
@@ -69,25 +65,30 @@ install_binary() {
     exit 1
   }
 
-  log_info "Extracting binary..."
+  echo "  Extracting binary..."
   tar -xzf "${tmpdir}/grounding.tar.gz" -C "${tmpdir}"
 
   mkdir -p "${INSTALL_DIR}"
   mv "${tmpdir}/grounding" "${INSTALL_DIR}/${BINARY_NAME}"
   chmod +x "${INSTALL_DIR}/${BINARY_NAME}"
 
-  log_info "Installed grounding ${version} to ${INSTALL_DIR}/${BINARY_NAME}"
+  echo ""
+  echo "  Grounding ${version} installed to ${INSTALL_DIR}/${BINARY_NAME}"
 
   if ! echo "${PATH}" | tr ':' '\n' | grep -qx "${INSTALL_DIR}"; then
-    log_warn "${INSTALL_DIR} is not in your PATH"
-    log_info "Add it to your shell profile:"
-    log_info "  export PATH=\"\${HOME}/.local/bin:\$PATH\""
+    echo "  ${INSTALL_DIR} is not in your PATH"
+    echo "  Add it: export PATH=\"\${HOME}/.local/bin:\$PATH\""
   else
-    log_info "Run 'grounding --help' to get started"
+    echo "  Run 'grounding --help' to get started"
   fi
 }
 
 main() {
+  local version=""
+
+  echo "Grounding installer"
+  echo ""
+
   while [[ $# -gt 0 ]]; do
     case $1 in
       --version)
@@ -116,10 +117,10 @@ main() {
     esac
   done
 
-  log_info "Detecting platform..."
+  echo "  Detecting platform..."
   local platform
   platform=$(detect_platform)
-  log_info "Platform: ${platform}"
+  echo "  Platform: ${platform}"
 
   install_binary "${platform}"
 }
