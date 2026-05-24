@@ -147,7 +147,7 @@ Team examples:
 - Index architecture decision: index_document(doc_id=\"adr-042-database-choice\", title=\"ADR-042: Database Selection for Analytics\", body=\"## Context\nWe need a database...\", source_url=\"https://github.com/team/adrs/0042.md\")
 
 Related tools:
-- batch_index: Prefer this when adding 5+ documents at once (faster, atomic)
+- batch_index: Prefer this when adding 2+ documents (faster, atomic). For bulk imports, send small chunks of 10-20 documents per call.
 - search_docs: After indexing, search to verify your document is findable
 - get_document: Retrieve the full document later by its doc_id"
     )]
@@ -238,9 +238,9 @@ Returns on success: JSON object {\"count\": N} where N is the number of document
 Returns on failure: Error message describing the failure. No documents from the batch will be indexed on failure (atomic rollback).
 
 Performance guidance:
-- Batch size: No hard limit, but test with batches of 100-1000 for optimal throughput.
+- Batch size: Keep batches small (10-20 documents max) to avoid timeouts and reduce atomic rollback risk on failure. Large batches may take seconds to commit and fail entirely if any single document errors.
 - Atomicity: The batch is committed as a single index operation on the Tantivy writer. A failure in any document causes the entire batch to roll back.
-- When to use: Prefer batch_index for 5+ documents; use index_document for single updates or incremental additions.
+- When to use: Prefer batch_index for 2+ documents; use index_document for single updates.
 
 Team examples:
 - Import project documentation: batch_index(documents=[{doc_id=\"api-ref\", title=\"API Reference\", body=\"...\"}, {doc_id=\"setup-guide\", title=\"Setup Guide\", body=\"...\"}, {doc_id=\"contributing\", title=\"Contributing Guidelines\", body=\"...\"}])
