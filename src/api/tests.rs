@@ -170,6 +170,59 @@ async fn test_get_document_not_found() {
 }
 
 #[tokio::test]
+async fn test_query_returns_passage_snippet() {
+    let (store, _tmp) = setup();
+    let app = app(store);
+
+    // Index a document where query term appears well into the body, not at the start
+    // Body must be long enough that passage extraction truncates the window
+    let body = "A".repeat(300) + " The key insight is the target term appears here in the passage section. " + &"B".repeat(300);
+    let json_body = serde_json::json!({
+        "doc_id": "d1",
+        "title": "Target",
+        "body": body,
+        "source_url": "https://example.com"
+    });
+
+    app.oneshot(
+        Request::builder()
+            .uri("/index")
+            .method("POST")
+            .header("Content-Type", "application/json")
+            .body(Body::from(json_body.to_string()))
+            .unwrap(),
+    )
+    .await
+    .unwrap();
+
+    let resp = app
+        .oneshot(
+            Request::builder()
+                .uri("/query")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(r#"{"query":"target term","top_k":3}"#))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(resp.status(), StatusCode::OK);
+    let body = axum::body::to_bytes(resp.into_body(), 4096).await.unwrap();
+    let json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let results = json["results"].as_array().unwrap();
+    assert!(!results.is_empty());
+    let snippet = results[0]["snippet"].as_str().unwrap();
+    // Snippet should contain the query-relevant passage, centered on matches
+    assert!(snippet.contains("target"), "Snippet should contain query term");
+    // Should not start with the leading A's (that's the document beginning)
+    assert!(!snippet.starts_with("AAAAA"), "Snippet should center on matches, not start of document");
+    assert!(!snippet.ends_with("BBBBB"), "Snippet should end at passage boundary, not document end");
+    // Snippet should be shorter than the full body
+    assert!(snippet.len() < body.len(), "Snippet should be a passage, not full body");
+}
+
+#[tokio::test]
 async fn test_metrics() {
     let (store, _tmp) = setup();
     let app = app(store);

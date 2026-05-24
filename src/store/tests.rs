@@ -56,6 +56,22 @@ fn test_snippet_contains_relevant_content() {
 }
 
 #[test]
+fn test_passage_extraction_with_unicode() {
+    let (store, _tmp) = setup_store();
+
+    let body = "The café menu features crème brûlée and café au lait. The crème brûlée is caramelized perfectly. Many customers order the café au lait with dessert.";
+    store.index_document("doc1", "Café Menu", body, Some("https://example.com/cafe")).unwrap();
+
+    let results = store.search("café", 5).unwrap();
+    assert!(!results.is_empty());
+    let snippet = &results[0].snippet;
+    assert!(snippet.contains("caf"), "Unicode passage should contain term");
+    // Verify snippet is reasonable length
+    assert!(snippet.len() > 20);
+    assert!(!snippet.contains("�"), "Snippet should not contain broken Unicode");
+}
+
+#[test]
 fn test_passage_extraction_targets_query_terms() {
     let (store, _tmp) = setup_store();
 
