@@ -1,10 +1,12 @@
 # Grounding
 
+[![Release](https://github.com/gothammm/grounding/actions/workflows/release.yml/badge.svg)](https://github.com/gothammm/grounding/actions/workflows/release.yml)
+
 **Single-binary retrieval engine for LLM context. No external database required.**
 
 ```bash
 cargo build --release
-./target/release/grounding serve --data-dir ./data --port 8080
+./target/release/grounding serve --data-dir ~/.config/grounding/data --port 8080
 
 # Index a document
 curl -X POST http://localhost:8080/index \
@@ -39,24 +41,6 @@ flowchart LR
 | `/mcp` | GET/POST | MCP Streamable HTTP endpoint |
 
 Request/response bodies use `Content-Type: application/json`. Full reference at [API.md](./docs/API.md).
-
-## MCP
-
-Grounding exposes a **Model Context Protocol** interface for LLM agents. Two transports:
-
-```bash
-# Stdio (for local agents like Claude Code)
-grounding mcp --data-dir ./data
-
-# Streamable HTTP at /mcp (for remote agents)
-grounding serve --data-dir ./data --port 8080
-```
-
-MCP tools: `search_docs`, `index_document`, `get_document`, `batch_index`. Full reference at [MCP.md](./docs/MCP.md).
-
-## Performance
-
-100,000 documents (286 MB text) indexed in ~51 seconds. Queries return in ~7ms. Index uses ~300 MB on disk.
 
 ## Installation
 
@@ -99,11 +83,61 @@ sudo mv grounding /usr/local/bin/
 cargo install grounding
 ```
 
+## MCP
+
+Grounding exposes a **Model Context Protocol** interface for LLM agents. Configure it in your agent's MCP settings:
+
+### OpenCode
+
+Add to your `opencode.json`:
+
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "grounding": {
+      "type": "local",
+      "command": ["grounding", "mcp", "--data-dir", "~/.config/grounding/data"],
+      "enabled": true
+    }
+  }
+}
+```
+
+### Claude Code
+
+Add to your `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "grounding": {
+      "command": "grounding",
+      "args": ["mcp", "--data-dir", "~/.config/grounding/data"]
+    }
+  }
+}
+```
+
+### Transports
+
+Two transports are available:
+
+```bash
+# Stdio (for local agents like Claude Code)
+grounding mcp --data-dir ~/.config/grounding/data
+
+# Streamable HTTP at /mcp (for remote agents)
+grounding serve --data-dir ~/.config/grounding/data --port 8080
+```
+
+MCP tools: `search_docs`, `index_document`, `get_document`, `batch_index`. Full reference at [MCP.md](./docs/MCP.md).
+
 ## Build from Source
 
 ```bash
 cargo build --release
-./target/release/grounding serve --data-dir ./data
+./target/release/grounding serve --data-dir ~/.config/grounding/data
 ```
 
 ## Design
