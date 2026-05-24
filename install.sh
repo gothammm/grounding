@@ -60,18 +60,19 @@ install_binary() {
     echo "  Latest: ${version}"
   fi
 
-  tarball_url="https://github.com/${REPO}/releases/download/${version}/grounding-${platform}.tar.gz"
-  checksum_url="https://github.com/${REPO}/releases/download/${version}/grounding-${platform}.tar.gz.sha256"
+  local tarball_name="grounding-${platform}.tar.gz"
+  tarball_url="https://github.com/${REPO}/releases/download/${version}/${tarball_name}"
+  checksum_url="https://github.com/${REPO}/releases/download/${version}/${tarball_name}.sha256"
 
   echo "  Downloading ${version} for ${platform}..."
-  curl -fL --progress-bar "${tarball_url}" -o "${tmpdir}/grounding.tar.gz"
-  curl -sL "${checksum_url}" -o "${tmpdir}/grounding.tar.gz.sha256"
+  curl -fL --progress-bar "${tarball_url}" -o "${tmpdir}/${tarball_name}"
+  curl -sL "${checksum_url}" -o "${tmpdir}/${tarball_name}.sha256"
 
   echo "  Verifying checksum..."
   if command -v sha256sum &>/dev/null; then
-    (cd "${tmpdir}" && sha256sum -c grounding.tar.gz.sha256)
+    (cd "${tmpdir}" && sha256sum -c "${tarball_name}.sha256")
   elif command -v shasum &>/dev/null; then
-    (cd "${tmpdir}" && shasum -a 256 -c grounding.tar.gz.sha256)
+    (cd "${tmpdir}" && shasum -a 256 -c "${tarball_name}.sha256")
   else
     log_error "No checksum tool found (sha256sum or shasum required)"
     exit 1
@@ -81,7 +82,7 @@ install_binary() {
   }
 
   echo "  Extracting binary..."
-  tar -xzf "${tmpdir}/grounding.tar.gz" -C "${tmpdir}"
+  tar -xzf "${tmpdir}/${tarball_name}" -C "${tmpdir}"
 
   mkdir -p "${INSTALL_DIR}"
   mv "${tmpdir}/grounding" "${INSTALL_DIR}/${BINARY_NAME}"
