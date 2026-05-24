@@ -57,7 +57,14 @@ install_binary() {
   curl -sSfL "${checksum_url}" -o "${tmpdir}/grounding.tar.gz.sha256"
 
   log_info "Verifying checksum..."
-  (cd "${tmpdir}" && sha256sum -c grounding.tar.gz.sha256) || {
+  if command -v sha256sum &>/dev/null; then
+    (cd "${tmpdir}" && sha256sum -c grounding.tar.gz.sha256)
+  elif command -v shasum &>/dev/null; then
+    (cd "${tmpdir}" && shasum -a 256 -c grounding.tar.gz.sha256)
+  else
+    log_error "No checksum tool found (sha256sum or shasum required)"
+    exit 1
+  fi || {
     log_error "Checksum verification failed! Aborting."
     exit 1
   }

@@ -64,17 +64,17 @@ Pre-built binaries for **Linux** (x86_64) and **macOS** (Intel & Apple Silicon) 
 
 ### Shell Install Script (Quick)
 ```bash
-curl -sSfL https://github.com/gothammm/grounding/releases/latest/install.sh | sh
+curl -sSfL https://raw.githubusercontent.com/gothammm/grounding/main/install.sh | sh
 ```
 
 Install a specific version:
 ```bash
-curl -sSfL https://github.com/gothammm/grounding/releases/latest/install.sh | sh -s -- --version v0.1.0
+curl -sSfL https://raw.githubusercontent.com/gothammm/grounding/main/install.sh | sh -s -- --version v0.1.0
 ```
 
 Install to a custom directory:
 ```bash
-curl -sSfL https://github.com/gothammm/grounding/releases/latest/install.sh | sh -s -- --dir /usr/local/bin
+curl -sSfL https://raw.githubusercontent.com/gothammm/grounding/main/install.sh | sh -s -- --dir /usr/local/bin
 ```
 
 ### Manual Download
