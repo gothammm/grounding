@@ -1,5 +1,4 @@
 use clap::{Parser, Subcommand};
-use dirs::config_dir;
 use std::env;
 use std::fs;
 use std::path::PathBuf;
@@ -25,17 +24,7 @@ fn get_log_directory() -> Option<PathBuf> {
         }
     }
 
-    // 2. Try XDG config directory
-    if let Some(mut config_dir) = config_dir() {
-        config_dir.push("grounding");
-        config_dir.push("logs");
-        match fs::create_dir_all(&config_dir) {
-            Ok(()) => return Some(config_dir),
-            Err(e) => eprintln!("Warning: Failed to create config log directory {}: {}", config_dir.display(), e),
-        }
-    }
-
-    // 3. Final fallback: HOME/.config/grounding/logs
+    // 2. HOME/.config/grounding/logs
     if let Ok(home) = env::var("HOME") {
         let mut path = PathBuf::from(home);
         path.push(".config");
@@ -43,7 +32,7 @@ fn get_log_directory() -> Option<PathBuf> {
         path.push("logs");
         match fs::create_dir_all(&path) {
             Ok(()) => return Some(path),
-            Err(e) => eprintln!("Warning: Failed to create home log directory {}: {}", path.display(), e),
+            Err(e) => eprintln!("Warning: Failed to create log directory {}: {}", path.display(), e),
         }
     }
 
