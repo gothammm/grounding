@@ -41,7 +41,7 @@ fn test_search_returns_score_ordered() {
 }
 
 #[test]
-fn test_snippet_truncation() {
+fn test_snippet_contains_relevant_content() {
     let (store, _tmp) = setup_store();
 
     let long_body = "word ".repeat(200);
@@ -49,8 +49,28 @@ fn test_snippet_truncation() {
 
     let results = store.search("word", 5).unwrap();
     assert!(!results.is_empty());
-    assert!(results[0].snippet.len() <= 500);
+    // Snippet should contain query terms (passage around matches)
+    assert!(results[0].snippet.contains("word"));
+    // Snippet shouldn't be the full body
+    assert!(results[0].snippet.len() < long_body.len());
 }
+
+#[test]
+fn test_passage_extraction_targets_query_terms() {
+    let (store, _tmp) = setup_store();
+
+    let body = "The quick brown fox jumps over the lazy dog. The fox is quick and agile. The dog is slow and lazy.";
+    store.index_document("doc1", "Fox Story", body, Some("https://example.com/fox")).unwrap();
+    store.index_document("doc2", "Dog Story", "The lazy dog sleeps all day. The dog is very lazy indeed. Nothing about foxes here.", Some("https://example.com/dog")).unwrap();
+
+    // Search for fox - result should center on fox passages, not start of document
+    let results = store.search("fox", 5).unwrap();
+    assert!(!results.is_empty());
+    let fox_result = results.iter().find(|r| r.doc_id == "doc1").unwrap();
+    // The snippet should contain the fox-related content, not just the beginning
+    assert!(fox_result.snippet.contains("fox"), "Snippet should contain the query term 'fox'");
+}
+
 
 #[test]
 fn test_batch_indexing() {

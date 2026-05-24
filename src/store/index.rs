@@ -108,6 +108,9 @@ impl Store {
         fn empty_to_none(s: &str) -> Option<String> {
             if s.is_empty() { None } else { Some(s.to_string()) }
         }
+        let body = doc_ref.get_first(self.schema.body)
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
         SearchResult {
             score,
             doc_id: doc_ref.get_first(self.schema.doc_id)
@@ -118,12 +121,31 @@ impl Store {
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
                 .to_string(),
-            snippet: doc_ref.get_first(self.schema.body)
+            snippet: body.chars().take(500).collect(),
+            source_url: doc_ref.get_first(self.schema.source_url)
+                .and_then(|v| v.as_str())
+                .and_then(empty_to_none),
+        }
+    }
+
+    fn doc_to_search_result(&self, doc_ref: TantivyDocument, score: f32, query: &str) -> SearchResult {
+        fn empty_to_none(s: &str) -> Option<String> {
+            if s.is_empty() { None } else { Some(s.to_string()) }
+        }
+        let body = doc_ref.get_first(self.schema.body)
+            .and_then(|v| v.as_str())
+            .unwrap_or("");
+        SearchResult {
+            score,
+            doc_id: doc_ref.get_first(self.schema.doc_id)
                 .and_then(|v| v.as_str())
                 .unwrap_or("")
-                .chars()
-                .take(500)
-                .collect(),
+                .to_string(),
+            title: doc_ref.get_first(self.schema.title)
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string(),
+            snippet: extract_relevant_passage(body, query, 500),
             source_url: doc_ref.get_first(self.schema.source_url)
                 .and_then(|v| v.as_str())
                 .and_then(empty_to_none),
@@ -165,9 +187,140 @@ impl Store {
         let mut results = Vec::new();
         for (score, doc_addr) in top_docs {
             let doc_ref = searcher.doc::<TantivyDocument>(doc_addr)?;
-            results.push(self.doc_to_result(doc_ref, score));
+            results.push(self.doc_to_search_result(doc_ref, score, query_str));
         }
         tracing::info!("search query=\"{}\" returned {} results", query_str, results.len());
         Ok(results)
     }
+}
+
+/// Extract a relevant passage from a document body centered around query term matches.
+/// Returns a context window containing the densest cluster of query term hits,
+/// snapped to sentence boundaries when possible.
+fn extract_relevant_passage(body: &str, query: &str, max_chars: usize) -> String {
+    if body.len() <= max_chars {
+        return body.to_string();
+    }
+
+    let query_terms: Vec<String> = query
+        .split_whitespace()
+        .filter(|t| !t.is_empty())
+        .map(|t| t.to_lowercase())
+        .collect();
+
+    if query_terms.is_empty() {
+        return body.chars().take(max_chars).collect();
+    }
+
+    let body_lower = body.to_lowercase();
+
+    let mut positions: Vec<usize> = Vec::new();
+    for term in &query_terms {
+        let mut start = 0;
+        while let Some(pos) = body_lower[start..].find(term.as_str()) {
+            positions.push(start + pos);
+            start = start + pos + 1;
+        }
+    }
+
+    if positions.is_empty() {
+        return body.chars().take(max_chars).collect();
+    }
+
+    positions.sort();
+    positions.dedup();
+
+    let best_center = if positions.len() == 1 {
+        positions[0]
+    } else {
+        let mut best_count = 0usize;
+        let mut best_center = 0usize;
+        let mut left = 0;
+
+        for right in 0..positions.len() {
+            while positions[right] - positions[left] > max_chars {
+                left += 1;
+            }
+            let count = right - left + 1;
+            if count > best_count {
+                best_count = count;
+                best_center = (positions[left] + positions[right]) / 2;
+            }
+        }
+        best_center
+    };
+
+    let half = max_chars / 2;
+    let mut window_start = if best_center > half {
+        best_center - half
+    } else {
+        0
+    };
+    window_start = align_to_char_boundary(body, window_start);
+    let window_start = window_start.min(body.len().saturating_sub(max_chars));
+    let window_end = (window_start + max_chars).min(body.len());
+    let window_end = align_to_char_boundary(body, window_end);
+
+    let snap_start = find_sentence_start(body, window_start);
+    let snap_end = find_sentence_end(body, window_end);
+
+    let mut result = String::new();
+    if snap_start > 0 {
+        result.push_str("...");
+    }
+    result.push_str(&body[snap_start..snap_end]);
+    if snap_end < body.len() {
+        result.push_str("...");
+    }
+
+    if result.len() > max_chars * 3 / 2 {
+        result = String::new();
+        if window_start > 0 {
+            result.push_str("...");
+        }
+        result.push_str(&body[window_start..window_end]);
+        if window_end < body.len() {
+            result.push_str("...");
+        }
+    }
+
+    result
+}
+
+fn find_sentence_start(text: &str, pos: usize) -> usize {
+    let search_start = pos.saturating_sub(300);
+    let before = &text[search_start..pos];
+    for boundary in &["\n\n", ". ", "! ", "? ", "\n"] {
+        if let Some(idx) = before.rfind(boundary) {
+            let result = search_start + idx + boundary.len();
+            return align_to_char_boundary(text, result);
+        }
+    }
+    search_start
+}
+
+fn find_sentence_end(text: &str, pos: usize) -> usize {
+    let search_end = (pos + 300).min(text.len());
+    if pos >= search_end {
+        return search_end;
+    }
+    let after = &text[pos..search_end];
+    for boundary in &[". ", "! ", "? ", "\n\n", "\n"] {
+        if let Some(idx) = after.find(boundary) {
+            let result = pos + idx + boundary.len();
+            return align_to_char_boundary(text, result);
+        }
+    }
+    align_to_char_boundary(text, search_end)
+}
+
+fn align_to_char_boundary(text: &str, byte_pos: usize) -> usize {
+    if byte_pos >= text.len() {
+        return text.len();
+    }
+    let mut pos = byte_pos;
+    while pos > 0 && !text.is_char_boundary(pos) {
+        pos -= 1;
+    }
+    pos
 }

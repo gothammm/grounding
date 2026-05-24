@@ -85,30 +85,30 @@ fn default_top_k() -> usize {
 #[tool_router(server_handler)]
 impl McpHandler {
     #[tool(
-        description = "Search the team's indexed documentation and context repository using BM25 ranking to find relevant documents. Returns results sorted by relevance score.
+        description = "Search indexed data using BM25 ranking to find relevant context passages. Returns results sorted by relevance score, with snippets containing the most relevant passage around query terms — like Google search.
 
-Use this tool when you need to find specific information, answer questions, or retrieve context from your team's indexed knowledge base. It powers Retrieval-Augmented Generation (RAG) workflows — you search for relevant docs, then use the results to ground your responses in factual team knowledge.
+Use this tool when you need to find context, answer questions, or retrieve information from your indexed knowledge base. Each result includes a passage centered around query term matches rather than just the start of a document, making it immediately useful as LLM context in RAG workflows.
 
 Parameters:
-- query (string, required): Search terms to match against document titles and body content. Use natural language phrases or keywords — the BM25 ranker handles both well.
+- query (string, required): Search terms to match against indexed content. Use natural language phrases or keywords — the BM25 ranker handles both well.
 - top_k (integer, optional, default=5): Maximum number of results to return. Increase for broader context gathering, decrease for pinpoint retrieval.
 
-Returns: JSON array of matching documents sorted by BM25 score descending. Each result contains:
+Returns: JSON array of matching results sorted by BM25 score descending. Each result contains:
 - score (number): BM25 relevance score. Higher = more relevant. Use this to threshold results (e.g., discard scores below 0.5).
 - doc_id (string): Unique document identifier. Pass this to get_document to retrieve the full document.
 - title (string): Document title. Useful as a summary/label for the result.
-- snippet (string): First 500 characters of the document body. Provides immediate context without a second round-trip.
+- snippet (string): Relevant passage extracted around query term matches (sentences/paragraphs), snapped to sentence boundaries. Designed to be directly useful as LLM context.
 - source_url (string | null): Original source URL if one was provided during indexing. Useful for attribution or linking back.
 
-Team examples:
-- \"Find our deployment configuration docs\" → search_docs(query=\"deployment configuration setup\", top_k=3)
+The snippet now returns a passage centered on query term matches rather than just the first 500 characters — think Google featured snippets, not document previews. Use get_document when you need to retrieve the full document body.
+
+Examples:
+- \"Find our deployment configuration\" → search_docs(query=\"deployment configuration setup\", top_k=3)
 - \"What's our API rate limiting policy\" → search_docs(query=\"API rate limit policy\", top_k=5)
-- \"Show me the architecture decisions for the billing service\" → search_docs(query=\"billing service architecture decisions\", top_k=5)
-- \"Get recent onboarding documentation\" → search_docs(query=\"onboarding guide new engineers\", top_k=10)
 
 Related tools:
-- index_document / batch_index: Use these first to populate the index with your docs
-- get_document: After search, call get_document with the doc_id to get the full document body (not just the 500-char snippet)"
+- index_document / batch_index: Use these first to populate the index with your content
+- get_document: Retrieve the full document body by doc_id"
     )]
     async fn search_docs(
         &self,
@@ -172,33 +172,26 @@ Related tools:
     }
 
     #[tool(
-        description = "Retrieve the full details of a single document from the team's index by its unique doc_id. This is a direct lookup (not a search) — you need to know the exact doc_id.
+        description = "Retrieve a document by its unique doc_id. This is a direct lookup (not a search) — you need the exact doc_id. Returns the beginning of the document body (first 500 characters).
 
-Use this tool when you have a specific document ID (from a search result, from another tool, or from your knowledge) and you need the complete document content. This is the second step in the common \"search → retrieve\" pattern: first find relevant docs with search_docs, then fetch the full content with get_document.
+Use this tool when you have a specific document ID (from search_docs results, from another tool, or from prior knowledge) and you need to read the full document content. This is useful when search_docs returned a passage but you need broader context around it.
 
 Parameters:
 - doc_id (string, required): The unique document identifier that was provided when the document was indexed. Must match exactly.
 
 Returns on success: JSON object with the document data:
-- score (number): Always 0.0 — this is a direct retrieval, not a search, so score is not applicable.
+- score (number): Always 0.0 — direct retrieval, not a search.
 - doc_id (string): The requested document ID (echoed back for confirmation).
 - title (string): The document title.
-- snippet (string): First 500 characters of the document body — enough to confirm context without reading the entire body.
+- snippet (string): First 500 characters of the document body — enough to confirm you have the right document and read its opening content.
 - source_url (string | null): Source URL if one was provided when indexing; null otherwise.
 
 Returns on failure:
 - Error message \"document not found\" if no document matches the given doc_id.
-- Error message describing the failure for I/O errors or index corruption.
-
-Team examples:
-- Retrieve a known ADR: get_document(doc_id=\"adr-042-database-choice\") → Gets the full ADR-042 document
-- Verify indexing: Get a document you just indexed to confirm body was stored correctly
-- Fetch full context: search_docs returns snippets → you find doc_id=\"deploy-runbook\" → call get_document for the complete runbook text
-- Process batch results: batch_index returns count → call get_document for specific docs to verify
 
 Related tools:
-- search_docs: Use first to discover relevant doc_ids, then call get_document for full content
-- index_document: Used to create the document that get_document retrieves"
+- search_docs: Use first to discover relevant doc_ids and get passage-level context
+- index_document / batch_index: Used to create documents"
     )]
     async fn get_document(
         &self,

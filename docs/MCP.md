@@ -41,9 +41,9 @@ MCP clients connect to `http://localhost:8080/mcp` using the [Streamable HTTP](h
 
 | Tool | Description |
 |------|-------------|
-| `search_docs` | Search indexed documents using BM25 ranking |
+| `search_docs` | Search indexed data using BM25 ranking, returns passage-level context around query term matches |
 | `index_document` | Index a single document |
-| `get_document` | Retrieve a document by its ID |
+| `get_document` | Retrieve a document by its ID (first 500 chars) |
 | `batch_index` | Index multiple documents in batch |
 
 ### search_docs
@@ -53,7 +53,10 @@ Arguments:
   query (string):   Search terms
   top_k  (number):  Number of results (default: 5)
 
-Returns: JSON array of SearchResult objects
+Returns: JSON array of SearchResult objects.
+Each snippet contains a relevant passage centered around query term matches
+(snapped to sentence boundaries) — ideal for direct LLM context.
+Use get_document for the full document body.
 ```
 
 ### index_document
@@ -74,7 +77,8 @@ Returns: "ok" on success
 Arguments:
   doc_id (string): Document ID to retrieve
 
-Returns: SearchResult JSON object, or error "document not found"
+Returns: SearchResult JSON object (first 500 chars of body), or error "document not found"
+Use search_docs first for passage-level context.
 ```
 
 ### batch_index

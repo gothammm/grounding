@@ -152,18 +152,18 @@ Response:
       "score": 2.345,
       "doc_id": "unique-string-123",
       "title": "Document Title",
-      "snippet": "First 500 characters of the body...",
+      "snippet": "the first unique passage that contains search terms... For example, the snippet will show the most relevant context passage centered around query term matches rather than just the start of the document.",
       "source_url": "https://example.com/doc"
     },
     {
       "score": 1.234,
       "doc_id": "unique-string-456",
       "title": "Another Document",
-      "snippet": "First 500 characters...",
+      "snippet": "and here is another relevant passage from a different document...",
       "source_url": null
     }
   ]
 }
 ```
 
-Results are ordered by BM25 score descending. `source_url` is `null` when no source URL was provided during indexing.
+Results are ordered by BM25 score descending. Each `snippet` contains the most relevant passage (sentences/paragraphs) centered around query term matches, snapped to sentence boundaries — like a Google featured snippet, not just a document preview. Use the `/documents` endpoint to retrieve the full document body. `source_url` is `null` when no source URL was provided during indexing.
