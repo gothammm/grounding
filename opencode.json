@@ -5,12 +5,5 @@
     "docs/API.md",
     "docs/DECISIONS.md",
     "docs/SETUP.md"
-  ],
-  "mcp": {
-    "grounding": {
-      "type": "local",
-      "command": ["grounding", "mcp", "--data-dir", "./data"],
-      "enabled": true
-    }
-  }
+  ]
 }
