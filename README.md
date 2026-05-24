@@ -19,29 +19,6 @@ curl -X POST http://localhost:8080/query \
   -d '{"query":"hello world","top_k":3}'
 ```
 
-## Architecture
-
-```mermaid
-flowchart LR
-    A[Your App] -- HTTP JSON --> B[grounding<br/>Axum Server]
-    B --> C[Tantivy<br/>BM25 Index]
-    C <--> D[on disk<br/>./data/index]
-```
-
-## API
-
-| Endpoint | Method | What it does |
-|---|---|---|
-| `/health` | GET | Health check |
-| `/metrics` | GET | Indexed/query counters |
-| `/index` | POST | Index a document |
-| `/index/batch` | POST | Index multiple documents |
-| `/documents` | POST | Retrieve by doc_id |
-| `/query` | POST | BM25 search |
-| `/mcp` | GET/POST | MCP Streamable HTTP endpoint |
-
-Request/response bodies use `Content-Type: application/json`. Full reference at [API.md](./docs/API.md).
-
 ## Installation
 
 Pre-built binaries for **Linux** (x86_64) and **macOS** (Intel & Apple Silicon) are available on the [Releases page](https://github.com/gothammm/grounding/releases).
@@ -132,6 +109,29 @@ grounding serve --data-dir ~/.config/grounding/data --port 8080
 ```
 
 MCP tools: `search_docs`, `index_document`, `get_document`, `batch_index`. Full reference at [MCP.md](./docs/MCP.md).
+
+## Architecture
+
+```mermaid
+flowchart LR
+    A[Your App] -- HTTP JSON --> B[grounding<br/>Axum Server]
+    B --> C[Tantivy<br/>BM25 Index]
+    C <--> D[on disk<br/>./data/index]
+```
+
+## API
+
+| Endpoint | Method | What it does |
+|---|---|---|
+| `/health` | GET | Health check |
+| `/metrics` | GET | Indexed/query counters |
+| `/index` | POST | Index a document |
+| `/index/batch` | POST | Index multiple documents |
+| `/documents` | POST | Retrieve by doc_id |
+| `/query` | POST | BM25 search |
+| `/mcp` | GET/POST | MCP Streamable HTTP endpoint |
+
+Request/response bodies use `Content-Type: application/json`. Full reference at [API.md](./docs/API.md).
 
 ## Build from Source
 
