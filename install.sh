@@ -35,7 +35,7 @@ install_binary() {
   local platform version tarball_url checksum_url tmpdir
   platform="$1"
   tmpdir=$(mktemp -d)
-  trap 'rm -rf "${tmpdir}"' EXIT
+  trap 'rm -rf "${tmpdir:-}"' EXIT
 
   if [[ -z "${version:-}" ]]; then
     echo "  Fetching latest version..."
