@@ -16,5 +16,6 @@ pub async fn serve_mcp_stdio(data_dir: &str) -> anyhow::Result<()> {
     let config = Config::new(data_dir);
     let store = Store::open(&config)?;
     let handler = mcp::McpHandler::new(store);
+    tracing::info!("MCP stdio server started");
     handler.serve_stdio().await
 }
