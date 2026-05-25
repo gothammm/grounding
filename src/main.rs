@@ -3,6 +3,7 @@ use std::env;
 use std::fs;
 use std::path::PathBuf;
 use tracing_appender::rolling;
+use tracing_subscriber::fmt::writer::BoxMakeWriter;
 use tracing_subscriber::{fmt, EnvFilter, layer::SubscriberExt};
 use tracing_subscriber::layer::Layer;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -15,7 +16,6 @@ struct Cli {
 }
 
 fn get_log_directory() -> Option<PathBuf> {
-    // 1. Try GROUNDING_LOG_DIR override
     if let Ok(log_dir) = env::var("GROUNDING_LOG_DIR") {
         let path = PathBuf::from(log_dir);
         match fs::create_dir_all(&path) {
@@ -24,7 +24,6 @@ fn get_log_directory() -> Option<PathBuf> {
         }
     }
 
-    // 2. HOME/.config/grounding/logs
     if let Ok(home) = env::var("HOME") {
         let mut path = PathBuf::from(home);
         path.push(".config");
@@ -55,16 +54,24 @@ enum Commands {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let cli = Cli::parse();
+
     let log_dir = get_log_directory();
 
     let filter = EnvFilter::try_from_default_env()
         .unwrap_or_else(|_| "grounding=debug".into());
 
-    let stdout_layer = fmt::layer()
-        .with_writer(std::io::stdout)
+    let is_mcp = matches!(cli.command, Commands::Mcp { .. });
+    let writer = if is_mcp {
+        BoxMakeWriter::new(std::io::stderr)
+    } else {
+        BoxMakeWriter::new(std::io::stdout)
+    };
+
+    let main_layer = fmt::layer()
+        .with_writer(writer)
         .with_filter(filter.clone());
 
-    // Keep the guard alive for the entire main function
     let mut _guard = None;
 
     if let Some(dir) = log_dir {
@@ -76,16 +83,15 @@ async fn main() -> anyhow::Result<()> {
             .with_ansi(false)
             .with_filter(filter);
         tracing_subscriber::registry()
-            .with(stdout_layer)
+            .with(main_layer)
             .with(file_layer)
             .init();
     } else {
         tracing_subscriber::registry()
-            .with(stdout_layer)
+            .with(main_layer)
             .init();
     }
 
-    let cli = Cli::parse();
     match cli.command {
         Commands::Serve { data_dir, port } => {
             let data_dir = std::env::var("GROUNDING_DATA_DIR").unwrap_or(data_dir);

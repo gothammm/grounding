@@ -1,6 +1,9 @@
 mod handlers;
 pub mod models;
 
+#[cfg(test)]
+mod tests;
+
 use std::sync::Arc;
 
 use axum::{routing::{get, post}, Router};

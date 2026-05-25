@@ -138,11 +138,17 @@ Request body:
 ```json
 {
   "query": "search terms here",
-  "top_k": 5
+  "top_k": 5,
+  "mode": "hybrid"
 }
 ```
 
-`top_k` defaults to 5 if omitted.
+`top_k` defaults to 5 if omitted. `mode` defaults to `"hybrid"` if omitted.
+
+Available modes:
+- `"hybrid"` — BM25 keyword search fused with vector embeddings via RRF. Best results. (default)
+- `"bm25"` — BM25 keyword search only
+- `"vector"` — Vector embedding similarity only (requires embedding model)
 
 Response:
 ```json
@@ -166,4 +172,4 @@ Response:
 }
 ```
 
-Results are ordered by BM25 score descending. Each `snippet` contains the most relevant passage (sentences/paragraphs) centered around query term matches, snapped to sentence boundaries — like a Google featured snippet, not just a document preview. Use the `/documents` endpoint to retrieve the full document body. `source_url` is `null` when no source URL was provided during indexing.
+Results are ordered by relevance score descending (BM25 for `"bm25"` mode, vector similarity for `"vector"` mode, RRF-fused for `"hybrid"` mode). Each `snippet` contains the most relevant passage (sentences/paragraphs) centered around query term matches, snapped to sentence boundaries — like a Google featured snippet, not just a document preview. Use the `/documents` endpoint to retrieve the full document body. `source_url` is `null` when no source URL was provided during indexing.

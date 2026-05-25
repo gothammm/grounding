@@ -30,7 +30,7 @@ pub async fn query_handler(
         }
     };
 
-    match state.store.search(&req.query, req.top_k) {
+    match state.store.search_with_mode(&req.query, req.top_k, &req.mode) {
         Ok(results) => {
             tracing::info!("query \"{}\" returned {} results", req.query, results.len());
             Json(json!({ "results": results })).into_response()

@@ -17,9 +17,14 @@ Quickwit is designed for clustered log search at scale. Overkill for single-inst
 ## Distribution Path
 
 1. **MVP**: Embedded Tantivy (one binary, one docker container)
-2. **V2**: Add vector embeddings to same index schema (non-breaking hybrid query)
+2. **V2** (current): BM25 + fastembed vector embeddings fused via RRF (non-breaking, hybrid query by default)
 3. **Scale**: Quickwit backend swap — same Tantivy foundation, same API, just `--backend quickwit`
 
-## What About Vectors
+## Why Vectors Now
 
-BM25 + field boosting provides strong precision for code and documentation retrieval. Vector search adds embedding infrastructure and cold-start latency with marginal gains for this domain. Vectors are additive in V2 without API breakage.
+BM25 keyword search is precise for exact matches but misses semantic relationships (e.g., "car" ↔ "automobile"). Adding fastembed ONNX embeddings at index time with in-process cosine similarity at query time gives us the best of both worlds:
+- **BM25** catches exact terminology matches
+- **Vector** catches semantically related concepts
+- **RRF fusion** combines both into a single ranked list, no tuning required
+
+Cold-start latency is handled gracefully: on first run the model (~33MB) downloads once to `~/.cache/fastembed/`. Subsequent runs use a cached ONNX Runtime session (~3ms inference).
