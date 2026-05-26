@@ -9,12 +9,12 @@ cargo build --release
 ## Run
 
 ```bash
-cargo run -- serve --data-dir ./data --port 8080
+cargo run -- serve --port 8080
 ```
 
 Or with the release binary:
 ```bash
-./target/release/grounding serve --data-dir ./data
+./target/release/grounding serve
 ```
 
 ### Environment Variables
@@ -23,7 +23,7 @@ These override the corresponding CLI flags:
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `GROUNDING_DATA_DIR` | `./data` | Path to data directory |
+| `GROUNDING_DATA_DIR` | `~/.config/grounding/data` | Path to data directory |
 | `GROUNDING_PORT` | `8080` | HTTP server port |
 
 Example:

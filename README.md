@@ -55,6 +55,14 @@ curl -L https://github.com/gothammm/grounding/releases/download/v0.4.1/grounding
 sudo mv grounding /usr/local/bin/
 ```
 
+### Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `GROUNDING_DATA_DIR` | `~/.config/grounding/data` | Path to the data directory |
+| `GROUNDING_PORT` | `8080` | HTTP server port |
+| `GROUNDING_LOG_DIR` | `~/.config/grounding/logs` | Directory for rolling log files |
+
 ## MCP
 
 Grounding exposes a **Model Context Protocol** interface for LLM agents. Configure it in your agent's MCP settings:
@@ -138,10 +146,21 @@ cargo build --release
 ./target/release/grounding serve --data-dir ~/.config/grounding/data
 ```
 
+## Troubleshooting
+
+- If the embedding model is unavailable on startup, vector search falls back to BM25-only behavior.
+- The fastembed model downloads on first use and is cached under `~/.cache/fastembed/`.
+- Make sure Grounding can write to `--data-dir` and `--data-dir/index`.
+
 ## Design
 
 - **Single binary** — Tantivy is embedded. No separate server process. No external database required.
 - **BM25 + vector hybrid search** — BM25 keyword search fused with fastembed vector embeddings via RRF. Default mode for all queries. BM25-only and vector-only also available.
 - **Distribution path** — Embedded index → Quickwit for clustered scale.
+
+## Project
+
+- License: [MIT](./LICENSE)
+- Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 See [DECISIONS.md](./docs/DECISIONS.md) for full rationale.

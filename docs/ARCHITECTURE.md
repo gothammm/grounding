@@ -16,7 +16,7 @@ Grounding is a single-binary retrieval engine for LLM context. No external datab
 
 ```
 src/
-├── main.rs         # CLI entry (clap: `grounding serve --data-dir ./data`)
+├── main.rs         # CLI entry (clap: `grounding serve --data-dir ~/.config/grounding/data`)
 ├── lib.rs          # Module declarations, wires up serve()
 ├── config.rs       # Config struct (data_dir, index_dir)
 ├── store/

@@ -7,7 +7,7 @@ Grounding exposes a **Model Context Protocol (MCP)** interface alongside the HTT
 ### 1. Stdio (local agents)
 
 ```bash
-grounding mcp --data-dir ./data
+grounding mcp --data-dir ~/.config/grounding/data
 ```
 
 This starts the MCP server on stdin/stdout — the standard transport for local tools like **Claude Code**.
@@ -32,7 +32,7 @@ Add to your `claude_desktop_config.json`:
 Available at `/mcp` on the HTTP server. Start the server normally:
 
 ```bash
-grounding serve --data-dir ./data --port 8080
+grounding serve --port 8080
 ```
 
 MCP clients connect to `http://localhost:8080/mcp` using the [Streamable HTTP](https://spec.modelcontextprotocol.io/specification/2025-03-26/basic/transports/streamable-http/) transport.

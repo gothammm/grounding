@@ -41,13 +41,13 @@ fn get_log_directory() -> Option<PathBuf> {
 #[derive(Subcommand)]
 enum Commands {
     Serve {
-        #[arg(long, default_value = "./data")]
+        #[arg(long, default_value = "~/.config/grounding/data")]
         data_dir: String,
         #[arg(long, default_value_t = 8080)]
         port: u16,
     },
     Mcp {
-        #[arg(long, default_value = "./data")]
+        #[arg(long, default_value = "~/.config/grounding/data")]
         data_dir: String,
     },
 }
