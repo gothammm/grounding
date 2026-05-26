@@ -13,10 +13,10 @@ curl -X POST http://localhost:8080/index \
   -H "Content-Type: application/json" \
   -d '{"doc_id":"1","title":"Hello","body":"World wide web hello","source_url":"https://example.com"}'
 
-# Search
+# Search (modes: "hybrid", "bm25", "vector"; defaults to hybrid)
 curl -X POST http://localhost:8080/query \
   -H "Content-Type: application/json" \
-  -d '{"query":"hello world","top_k":3}'
+  -d '{"query":"hello world","top_k":3,"mode":"hybrid"}'
 ```
 
 ## Installation
@@ -30,7 +30,7 @@ curl -sSfL https://raw.githubusercontent.com/gothammm/grounding/main/install.sh 
 
 Install a specific version:
 ```bash
-curl -sSfL https://raw.githubusercontent.com/gothammm/grounding/main/install.sh | sh -s -- --version v0.1.0
+curl -sSfL https://raw.githubusercontent.com/gothammm/grounding/main/install.sh | sh -s -- --version v0.4.1
 ```
 
 Install to a custom directory:
@@ -43,21 +43,16 @@ Download and extract the tarball for your platform from the [Releases page](http
 
 ```bash
 # Linux
-curl -L https://github.com/gothammm/grounding/releases/download/v0.1.0/grounding-x86_64-unknown-linux-gnu.tar.gz | tar xz
+curl -L https://github.com/gothammm/grounding/releases/download/v0.4.1/grounding-x86_64-unknown-linux-gnu.tar.gz | tar xz
 sudo mv grounding /usr/local/bin/
 
 # macOS (Intel)
-curl -L https://github.com/gothammm/grounding/releases/download/v0.1.0/grounding-x86_64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/gothammm/grounding/releases/download/v0.4.1/grounding-x86_64-apple-darwin.tar.gz | tar xz
 sudo mv grounding /usr/local/bin/
 
 # macOS (Apple Silicon)
-curl -L https://github.com/gothammm/grounding/releases/download/v0.1.0/grounding-aarch64-apple-darwin.tar.gz | tar xz
+curl -L https://github.com/gothammm/grounding/releases/download/v0.4.1/grounding-aarch64-apple-darwin.tar.gz | tar xz
 sudo mv grounding /usr/local/bin/
-```
-
-### Cargo Install (Development)
-```bash
-cargo install grounding
 ```
 
 ## MCP
@@ -115,8 +110,11 @@ MCP tools: `search_docs`, `index_document`, `get_document`, `batch_index`. Full 
 ```mermaid
 flowchart LR
     A[Your App] -- HTTP JSON --> B[grounding<br/>Axum Server]
+    B -- MCP Stdio/HTTP --> M[MCP Interface<br/>search_docs / index_document<br/>get_document / batch_index]
     B --> C[Tantivy<br/>BM25 Index]
     C <--> D[on disk<br/>./data/index]
+    B --> E[fastembed<br/>Vector Store]
+    E <--> F[in memory<br/>384-dim embeddings]
 ```
 
 ## API
@@ -128,8 +126,8 @@ flowchart LR
 | `/index` | POST | Index a document |
 | `/index/batch` | POST | Index multiple documents |
 | `/documents` | POST | Retrieve by doc_id |
-| `/query` | POST | BM25 search |
-| `/mcp` | GET/POST | MCP Streamable HTTP endpoint |
+| `/query` | POST | Hybrid / BM25 / vector search (mode param) |
+| `/mcp` | GET/POST | MCP Streamable HTTP |
 
 Request/response bodies use `Content-Type: application/json`. Full reference at [API.md](./docs/API.md).
 
@@ -143,7 +141,7 @@ cargo build --release
 ## Design
 
 - **Single binary** — Tantivy is embedded. No separate server process. No external database required.
-- **BM25 today, vectors in V2** — Field boosting is sufficient for code/docs. Vectors add without API breakage.
-- **Distribution path** — Embedded index → add vectors → swap to Quickwit for clustered scale.
+- **BM25 + vector hybrid search** — BM25 keyword search fused with fastembed vector embeddings via RRF. Default mode for all queries. BM25-only and vector-only also available.
+- **Distribution path** — Embedded index → Quickwit for clustered scale.
 
 See [DECISIONS.md](./docs/DECISIONS.md) for full rationale.
