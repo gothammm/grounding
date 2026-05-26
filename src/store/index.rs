@@ -323,7 +323,7 @@ impl Store {
             vec_ranks.insert(id.as_str(), i + 1);
         }
 
-        let all_ids: HashSet<&str> = bm25_ranks.keys().chain(vec_ranks.keys()).copied().collect();
+        let all_ids: HashSet<&str> = bm25_ranks.keys().copied().collect();
 
         let mut fused: Vec<(&str, f32)> = all_ids
             .into_iter()
